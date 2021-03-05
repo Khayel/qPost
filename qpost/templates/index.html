@@ -1,0 +1,87 @@
+{%extends "layout.html" %}
+{%block header_content%}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css' ) }}"">
+{%endblock%}
+{%block body_content%}
+<div class=" container">
+<nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+    <a class="navbar-brand" href="#">qPost</a>
+
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+        <ul class="navbar-nav mr-auto">
+            <li class="nav-item active">
+                <a href="{{url_for('views.login') }}" class="btn text-white">Login</a>
+            </li>
+            <li class="nav-item">
+                <a href="{{url_for('views.logout') }}" class="btn text-white">Logout</a>
+            </li>
+            <li class="nav-item active">
+                <a href="{{url_for('views.index') }}" class="btn text-white">My Questions</a>
+            </li>
+            <li class="nav-item active">
+                <a href="{{url_for('views.question') }}" class="btn text-white">Answer Questions</a>
+            </li>
+        </ul>
+
+    </div>
+</nav>
+<div class="new_question d-flex flex-column justify-content-center">
+    <div class="new-card card d-flex flex-row justify-content-center">
+        <div class="card-header text-white bg-dark question w-50">
+            <form action="/question" method="POST"><input type="text" name="question" id="question_input"
+                    placeholder="What is your question?">
+                <button class="btn-new-question btn btn-success">Submit</button>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="pt-3"></div>
+<div class="main pt-5">
+
+    <div>Welcome {{username}}
+        <button class="q btn  btn-dark">Ask <i class="text-white bi bi-plus-square"></i>
+        </button>
+    </div>
+
+    {% if is_mine %}
+    <h2>My Questions</h2>
+    {% else %}
+    <h2>All Questions</h2>
+    {%endif%}
+    <div class="d-flex flex-column">
+
+        {% for question_item in my_questions %}
+        <div class="card w-100">
+            <div class="card-header text-white bg-dark question">Q: {{question_item['question']}}
+                <a href="$" class="answer-button btn btn-primary"><i class="text-white bi bi-check-circle-fill"></i>
+                    Answer</a>
+                <form action="/delete" style="display: inline;" method="POST">
+                    <input type="hidden" name="q_id" value="{{question_item['id']}}">
+                    <button class="delete-button btn btn-danger"><i class="text-whitebi bi-x-circle-fill"></i>
+                        Delete</button>
+                </form>
+            </div>
+
+            <ul class="list-group list-group-flush">
+                <li class=" list-group-item answer-container">
+                    <form action="/answer" method="POST"><input class="answer_input" name="answer_input"
+                            type="text"><input type="hidden" name="q_id" value="{{question_item['id']}}"><button
+                            class="btn btn-success"><i class="text-white bi bi-check-circle-fill"></i> Submit </button>
+                    </form>
+                </li>
+                {% for answer in question_item['answers'] %}
+                <li class="answer list-group-item"> {{answer}}</li>
+                {%endfor%}
+            </ul>
+
+
+        </div>
+        {%endfor%}
+    </div>
+
+</div>
+
+{%endblock%}
+{%block script_content %}
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+{%endblock%}

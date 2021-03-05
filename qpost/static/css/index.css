@@ -1,0 +1,26 @@
+body{
+    box-sizing: border-box;
+}
+.new_question {
+    position: absolute;
+    visibility: hidden;
+    background-color:white;
+    width: 0vw;
+    left: 0px;
+    top: 0px;
+    height: 0vH;
+    z-index: 99;
+    opacity: 0.8;
+}
+
+.answer-container{
+
+    visibility: hidden;
+    width: 0vw;
+    height: 0vH;
+    padding: 0;
+}
+
+.card{
+    margin: 0.5em;
+}
