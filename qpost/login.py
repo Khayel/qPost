@@ -121,7 +121,6 @@ def get_my_questions(user_id):
 
     for a in answers:
         my_questions[a[0]]['answers'].append((a[1], a[2], a[3]))
-    print(my_questions.values())
     return my_questions.values()
 
 
@@ -162,6 +161,12 @@ def delete_question(q_id):
     modify_query(query_string, q_id)
 
 
-def make_answer(a_id):
-    query_string = "UPDATE answer SET is_answer = TRUE WHERE a_id = (%s)"
+def delete_answer(a_id):
+    query_string = "DELETE FROM answer WHERE a_id = (%s)"
+    print("DSADSADASDASE", a_id)
     modify_query(query_string, a_id)
+
+
+def mark_answer(a_id, val):
+    query_string = "UPDATE answer SET is_answer = (%s)WHERE a_id = (%s)"
+    modify_query(query_string, val, a_id)

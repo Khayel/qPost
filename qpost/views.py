@@ -13,7 +13,6 @@ def index():
     Default Home Page
     View the current user's questions.
     """
-
     return render_template('index.html',
                            username=session['username'],
                            user_id=session['user_id'],
@@ -70,47 +69,46 @@ def logout():
 @ views.route('/question', methods=["POST", "GET"])
 def question():
     """
-    Displays ALL questions and answers.
-    POST request is used to submit new Questions only if user is logged in. On success refresh page.
+    Display all questions and answers.
     """
-    if request.method == "POST" and session['user_id'] and session['username']:
-        if new_question(request.form.get('question'), session['user_id']):
-            return redirect(request.referrer)
-        else:
-            return "Error, Please try again."
-    else:
-        return render_template(
-            'index.html',
-            username=session['username'],
-            user_id=session['user_id'],
-            is_mine=False,
-            my_questions=get_all_questions(session['user_id']))
+    return render_template(
+        'index.html',
+        username=session['username'],
+        user_id=session['user_id'],
+        is_mine=False,
+        my_questions=get_all_questions(session['user_id']))
 
 
-@ views.route('/answer', methods=["POST"])
+@ views.route('/answer/<action>', methods=["POST"])
 @ login_required
-def answer():
+def answer(action):
     """
     Answer a question assuming user is logged in
     """
-    if answer_question(request.form.get('q_id'), request.form.get('answer_input'), session['user_id']):
+    if action == "add":
+        answer_question(request.form.get('q_id'), request.form.get(
+            'answer_input'), session['user_id'])
+    elif action == "delete":
+        delete_answer(request.form.get('a_id'))
         return redirect(request.referrer)
+    elif action == "selected":
+        mark_answer(request.form.get('a_id'), 1)
+    elif action == "unselected":
+        mark_answer(request.form.get('a_id'), 0)
     else:
-        return "Error, Please try again."
+        return HTTPStatus.BAD_REQUEST
 
-
-@ views.route('/question/delete', methods=['POST'])
-@ login_required
-def question_delete():
-    delete_question(request.form.get('q_id'))
     return redirect(request.referrer)
 
 
-@ views.route('/question/answer', methods=['POST'])
+@ views.route('/question/<action>', methods=['POST'])
 @ login_required
-def question_answer():
-    print("DSAKLDJSALDKASJDLASJDL")
-    result = make_answer(request.form.get('a_id'))
-    return jsonify(
-        {'status': result}
-    )
+def question_action(action):
+    if action == "delete":
+        delete_question(request.form.get('q_id'))
+    elif action == "new":
+        new_question(request.form.get('question'), session['user_id'])
+    else:
+        return HTTPStatus.BAD_REQUEST
+
+    return redirect(request.referrer)

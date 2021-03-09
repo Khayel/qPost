@@ -9,7 +9,7 @@ $(document).ready(() => {
 
 
     })
-    $('.new_question').click(function (e) {
+    $('.new_question').on('click', function (e) {
         console.log(e.target)
         if (e.target !== this) {
             return;
@@ -21,7 +21,7 @@ $(document).ready(() => {
             "width": "0vW"
         });
     })
-    $('.answer-button').click(function (e) {
+    $('.answer-button').on('click', function (e) {
         e.preventDefault()
         $(e.target).parent().parent().next().find('.answer-container').css(
             {
@@ -31,15 +31,37 @@ $(document).ready(() => {
             }
         )
     })
-    $('.mark-answer').click(function (e) {
+    $('.mark-answer').on('click', function (e) {
         e.preventDefault()
         $(e.target).parent().addClass('bg-success');
 
         payload = { 'a_id': $(e.target).prev().val() }
-        $.post("/question/answer", payload, function (data) {
-            console.log(data)
+        $.post("/answer/selected", payload, function (data) {
+            window.location.href = window.location.href;
         });
     })
+    $('.unmark-answer').on('click', function (e) {
+        e.preventDefault()
+        $(e.target).parent().removeClass('bg-success');
+
+        payload = { 'a_id': $(e.target).prev().val() }
+        $.post("/answer/unselected", payload, function (data) {
+
+            window.location.href = window.location.href;
+        });
+    })
+    $('.delete-answer').on('click', function (e) {
+        e.preventDefault();
+        if (confirm("Are you sure you want to delete this answer?")) {
+            payload = { 'a_id': $(e.target).prev().prev().val() }
+            $.post("/answer/delete", payload, function (data) {
+                $(e.target).parent().remove()
+            });
+        }
+
+
+    })
+
 
 
 

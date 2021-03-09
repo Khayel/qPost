@@ -12,9 +12,9 @@ body{
     z-index: 99;
     opacity: 0.8;
 }
-.mark-answer {
+.mark-answer, .unmark-answer, .delete-answer {
     visibility: hidden ;
-    float:right
+    float:right;
  }
 
 .answer-container{
@@ -25,12 +25,13 @@ body{
     padding: 0;
 }
 .answer:hover{
-    /* background-color: green; */
+     background-color: gray; 
 }
 
-.answer:hover > .mark-answer{
+.answer:hover > .mark-answer,.answer:hover > .delete-answer, .answer:hover > .unmark-answer {
     visibility: visible;
 }
+
 .functions {
    float:right
 }
