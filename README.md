@@ -4,9 +4,9 @@ Basic Q&A board that allows users to ask questions and allows others to answer t
 Stack - MySQL database, Flask backend, HTML,CSS,Javascript, Bootstrap 5.0
 
 Features
--Login system, with password hashing and salting.
--Ask questions answer questions, mark answers to your questions, view all other questions.
--Delete only your questions or answers to your questions.
+- Login system, with password hashing and salting.
+- Ask questions answer questions, mark answers to your questions, view all other questions.
+- Delete only your questions or answers to your questions.
 
 ToDo
 - Implement teacher user with and limit student functionality.
