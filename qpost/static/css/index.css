@@ -12,6 +12,10 @@ body{
     z-index: 99;
     opacity: 0.8;
 }
+.mark-answer {
+    visibility: hidden ;
+    float:right
+ }
 
 .answer-container{
 
@@ -19,6 +23,16 @@ body{
     width: 0vw;
     height: 0vH;
     padding: 0;
+}
+.answer:hover{
+    /* background-color: green; */
+}
+
+.answer:hover > .mark-answer{
+    visibility: visible;
+}
+.functions {
+   float:right
 }
 
 .card{

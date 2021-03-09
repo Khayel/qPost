@@ -9,9 +9,6 @@
 
     <div class="collapse navbar-collapse" id="navbarCollapse">
         <ul class="navbar-nav mr-auto">
-            <li class="nav-item active">
-                <a href="{{url_for('views.login') }}" class="btn text-white">Login</a>
-            </li>
             <li class="nav-item">
                 <a href="{{url_for('views.logout') }}" class="btn text-white">Logout</a>
             </li>
@@ -38,28 +35,35 @@
 <div class="pt-3"></div>
 <div class="main pt-5">
 
-    <div>Welcome {{username}}
+    <div>
+        <h2>Welcome {{username}}</h2>
         <button class="q btn  btn-dark">Ask <i class="text-white bi bi-plus-square"></i>
         </button>
     </div>
 
     {% if is_mine %}
-    <h2>My Questions</h2>
+    <h3>My Questions</h3>
     {% else %}
-    <h2>All Questions</h2>
+    <h3>All Questions</h3>
     {%endif%}
     <div class="d-flex flex-column">
 
         {% for question_item in my_questions %}
-        <div class="card w-100">
-            <div class="card-header text-white bg-dark question">Q: {{question_item['question']}}
-                <a href="$" class="answer-button btn btn-primary"><i class="text-white bi bi-check-circle-fill"></i>
-                    Answer</a>
-                <form action="/delete" style="display: inline;" method="POST">
-                    <input type="hidden" name="q_id" value="{{question_item['id']}}">
-                    <button class="delete-button btn btn-danger"><i class="text-whitebi bi-x-circle-fill"></i>
-                        Delete</button>
-                </form>
+        <div class="card bg-dark">
+            <div class="card-header text-white question">
+                <span class="question-item">Q: {{question_item['question']}}</span>
+                <span class="functions"><a href="$" class="answer-button btn btn-primary"><i
+                            class="text-white bi bi-check-circle-fill"></i>
+                        Answer</a>
+                    {% if user_id == question_item['user_id'] %}
+                    <form action="{{ url_for('views.question_delete') }}" style="display: inline;" method="POST">
+                        <input type="hidden" name="q_id" value="{{question_item['id']}}">
+                        <button class="delete-button btn btn-danger"><i class="text-whitebi bi-x-circle-fill"></i>
+                            Delete</button>
+                    </form>
+                    {% endif %}
+                </span>
+
             </div>
 
             <ul class="list-group list-group-flush">
@@ -69,8 +73,17 @@
                             class="btn btn-success"><i class="text-white bi bi-check-circle-fill"></i> Submit </button>
                     </form>
                 </li>
-                {% for answer in question_item['answers'] %}
-                <li class="answer list-group-item"> {{answer}}</li>
+
+                {% for (answer,a_id, is_answer) in question_item['answers']%}
+                <li class="answer {{'bg-success' if is_answer }}
+                 list-group-item"> {{answer}}
+
+                    <input type="hidden" name="a_id" id="a_id" value="{{a_id }}">
+
+                    <button class="btn text-right btn-success mark-answer">Mark as
+                        answer</button>
+
+                </li>
                 {%endfor%}
             </ul>
 

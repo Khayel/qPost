@@ -10,8 +10,9 @@ import os
 
 def select_query(query_string, *q_vars):
     """
-    function for easier SELECT statements
+    helper function for easier SELECT statements
     takes query string and tuple q_vars for  values in query
+
     """
 
     try:
@@ -29,6 +30,24 @@ def select_query(query_string, *q_vars):
         results = cursor.fetchall()
         cnx.close()
         return results
+
+
+def modify_query(query_string, *q_vars):
+    try:
+        cnx = mysql.connector.connect(**CONNECTION_CONFIG)
+    except mysql.connector.Error as err:
+        if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+            print("Something is wrong with connection username and password")
+        elif err.errno == errorcode.ER_BAD_DB_ERROR:
+            print("Database does not exist")
+        else:
+            print(err)
+    else:
+        cursor = cnx.cursor()
+        cursor.execute(query_string, q_vars)
+        cnx.commit()
+        cnx.close()
+        return True
 
 
 def create_hash(password, salt=None):
@@ -54,7 +73,13 @@ def create_hash(password, salt=None):
 
 
 def verify_login(user, password):
-    q = f"SELECT password_hash, salt,UserID FROM Users WHERE Users.username = (%s) "
+    """
+    Verification for logging in a user.
+    Based on username get password hash and salt from database. Hash given password with the salt retrieved and cooompare with database.
+    On invalid logins, return 'no_user' or 'invalid'
+    On valid login, return list ['valid', userID ]
+    """
+    q = f"SELECT password_hash, salt, UserID FROM Users WHERE Users.username = (%s) "
     result = select_query(q, (user))
     if not result:
         return 'no_user'
@@ -67,56 +92,35 @@ def verify_login(user, password):
 
 
 def create_user(username, password):
+    """
+    TODO FIX
+    return s user id
+    """
     result = create_hash(password)
-    try:
-        cnx = mysql.connector.connect(**CONNECTION_CONFIG)
-    except mysql.connector.Error as err:
-        if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-            print("Something is wrong with your user name or password")
-        elif err.errno == errorcode.ER_BAD_DB_ERROR:
-            print("Database does not exist")
-        else:
-            print(err)
-    else:
+    modify_query('INSERT INTO Users (username,password_hash,salt) VALUES ((%s), (%s), (%s))',
+                 username, result['hash'], result['salt'])
 
-        cursor = cnx.cursor()
-        query = 'INSERT INTO Users (username,password_hash,salt) VALUES ((%s), (%s), (%s))'
-        cursor.execute(query, (username, result['hash'], result['salt'], time.strftime(
-            '%Y-%m-%d %H:%M:%S')))
-        cnx.commit()
-        cnx.close()
-        return
+    return verify_login(username, password)
 
 
-def get_my_questions(username):
+def get_my_questions(user_id):
     """"
-    returns a list of Question objects.
-
+    Returns a list of Question objects
+    TODO change to user_id
+    questions - gets all questions of username
+    answers - get all answers for all the questions asked by the user
 
     """
-    print("HERE")
-    # result = select_query("SELECT answer.answer,question.question, answer.a_id,  answer.q_id  FROM answer Left JOIN  question on answer.q_id=question.q_id WHERE question.user_id in (SELECT userid from users WHERE username=(%s))", username)
-    my_questions = {}
     questions = select_query(
-        "SELECT q_id,question FROM question WHERE question.user_id in (SELECT userid from users WHERE username=(%s)) ORDER BY create_time DESC ", username)
-    my_questions = {q[0]: copy.deepcopy(
-        Question(q[1], q_id=q[0])) for q in questions}
+        "SELECT q_id,question FROM question WHERE question.user_id = (%s) ORDER BY create_time DESC ", user_id)
+
     answers = select_query(
-        "SELECT answer.q_id, answer.answer  FROM answer Left JOIN  question on answer.q_id=question.q_id WHERE question.user_id in (SELECT userid from users WHERE username=(%s))", username)
+        "SELECT answer.q_id, answer.answer, answer.a_id,answer.is_answer FROM answer Left JOIN  question on answer.q_id=question.q_id WHERE question.user_id =(%s)", user_id)
+    my_questions = {q[0]: copy.deepcopy(
+        Question(q[1], q_id=q[0], user_id=user_id)) for q in questions}
+
     for a in answers:
-        print(a)
-        if a[0] in my_questions.keys():
-            my_questions[a[0]]['answers'].append(a[1])
-
-            # shallow copy fix....
-            # if len(my_questions[a[0]]['answers']) == 0:
-            #     my_questions[a[0]]['answers'] = [a[1]]
-            # else:
-            #     my_questions[a[0]]['answers'] = [
-            #         *my_questions[a[0]]['answers'], a[1]]
-
-        else:
-            print("should never happen check")
+        my_questions[a[0]]['answers'].append((a[1], a[2], a[3]))
     print(my_questions.values())
     return my_questions.values()
 
@@ -125,32 +129,16 @@ def get_all_questions(user_id):
     """"
     returns a list of Question objects.
 
-
     """
-    print("HERE")
-    # result = select_query("SELECT answer.answer,question.question, answer.a_id,  answer.q_id  FROM answer Left JOIN  question on answer.q_id=question.q_id WHERE question.user_id in (SELECT userid from users WHERE username=(%s))", username)
-    my_questions = {}
     questions = select_query(
-        "SELECT q_id,question FROM question")
+        "SELECT q_id,question, user_id FROM question")
     my_questions = {q[0]: copy.deepcopy(
-        Question(q[1], q_id=q[0])) for q in questions}
+        Question(q[1], q_id=q[0], user_id=q[2])) for q in questions}
+
     answers = select_query(
-        "SELECT answer.q_id, answer.answer  FROM answer Left JOIN  question on answer.q_id=question.q_id")
+        "SELECT answer.q_id, answer.answer, answer.a_id, answer.is_answer FROM answer Left JOIN  question on answer.q_id=question.q_id")
     for a in answers:
-        print(a)
-        if a[0] in my_questions.keys():
-            my_questions[a[0]]['answers'].append(a[1])
-
-            # shallow copy fix....
-            # if len(my_questions[a[0]]['answers']) == 0:
-            #     my_questions[a[0]]['answers'] = [a[1]]
-            # else:
-            #     my_questions[a[0]]['answers'] = [
-            #         *my_questions[a[0]]['answers'], a[1]]
-
-        else:
-            print("should never happen check")
-    print(my_questions.values())
+        my_questions[a[0]]['answers'].append((a[1], a[2], a[3]))
     return my_questions.values()
 
 
@@ -159,42 +147,21 @@ def new_question(question, userID):
     Insert new question
     """
     query_string = "INSERT INTO Question(question,user_id) VALUES (%s,%s)"
-    try:
-        cnx = mysql.connector.connect(**CONNECTION_CONFIG)
-    except mysql.connector.Error as err:
-        if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-            print("Something is wrong with your user name or password")
-        elif err.errno == errorcode.ER_BAD_DB_ERROR:
-            print("Database does not exist")
-        else:
-            print(err)
-    else:
-        cursor = cnx.cursor()
-        cursor.execute(query_string, (question, userID))
-        cnx.commit()
-        cnx.close()
-        return True
+    modify_query(query_string, question, userID)
+    return True
 
 
 def answer_question(q_id, answer, u_id):
     query_string = "INSERT INTO Answer(q_id, answer,user_id) VALUES (%s, %s, %s)"
-    try:
-        cnx = mysql.connector.connect(**CONNECTION_CONFIG)
-    except mysql.connector.Error as err:
-        if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-            print("Something is wrong with connection username and password")
-        elif err.errno == errorcode.ER_BAD_DB_ERROR:
-            print("Database does not exist")
-        else:
-            print(err)
-    else:
-        cursor = cnx.cursor()
-        cursor.execute(query_string, (q_id, answer, u_id))
-        cnx.commit()
-        cnx.close()
-        return True
+    modify_query(query_string, q_id, answer, u_id)
+    return True
 
 
 def delete_question(q_id):
-    query_string = "INSERT INTO Answer(q_id, answer,user_id) VALUES (%s, %s, %s)"
-    pass
+    query_string = "DELETE FROM question WHERE q_id = (%s)"
+    modify_query(query_string, q_id)
+
+
+def make_answer(a_id):
+    query_string = "UPDATE answer SET is_answer = TRUE WHERE a_id = (%s)"
+    modify_query(query_string, a_id)

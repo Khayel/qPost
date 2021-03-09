@@ -23,14 +23,22 @@ $(document).ready(() => {
     })
     $('.answer-button').click(function (e) {
         e.preventDefault()
-        console.log($(e.target).parent().next())
-        $(e.target).parent().next().find('.answer-container').css(
+        $(e.target).parent().parent().next().find('.answer-container').css(
             {
                 "visibility": "visible",
                 "height": "auto",
                 "width": "auto"
             }
         )
+    })
+    $('.mark-answer').click(function (e) {
+        e.preventDefault()
+        $(e.target).parent().addClass('bg-success');
+
+        payload = { 'a_id': $(e.target).prev().val() }
+        $.post("/question/answer", payload, function (data) {
+            console.log(data)
+        });
     })
 
 
