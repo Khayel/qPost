@@ -126,7 +126,7 @@ def get_my_questions(user_id):
 
 def get_all_questions(user_id):
     """"
-    returns a list of Question objects.
+    returns a list of Question objects. for all questions
 
     """
     questions = select_query(
