@@ -3,6 +3,10 @@ from flask import redirect, session, url_for
 
 
 def login_required(f):
+    """
+    Decorator function to verify login session of a user
+    """
+
     @wraps(f)
     def decorated_function(*args, **kwargs):
         print("LOGIN REQUIRED CHECK")

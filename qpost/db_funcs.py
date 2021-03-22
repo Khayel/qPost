@@ -4,15 +4,13 @@ from mysql.connector import errorcode
 from .questions import Question
 import hashlib
 import copy
-import time
 import os
 
 
 def select_query(query_string, *q_vars):
-    """
-    helper function for easier SELECT statements
-    takes query string and tuple q_vars for  values in query
+    """Helper function for SELECT statements.
 
+    Takes query string and tuple q_vars for  values in query
     """
 
     try:
@@ -33,6 +31,10 @@ def select_query(query_string, *q_vars):
 
 
 def modify_query(query_string, *q_vars):
+    """Helper function for INSERT, UPDATE or DELETE queries.
+
+    Handles connection and commits queries.
+    """
     try:
         cnx = mysql.connector.connect(**CONNECTION_CONFIG)
     except mysql.connector.Error as err:
@@ -51,13 +53,13 @@ def modify_query(query_string, *q_vars):
 
 
 def create_hash(password, salt=None):
-    """
-    Hashing function
-    if salt is not provided, create a new user with new hash
-    otherwise take hex into salt and return dict with hash, and salt
-    returns {'hash': hash in hex, 'salt': salt in hex}
+    """Hashing function for passwords.
 
+    If salt is not provided, generate a new salt and create a new hash.(creating users)
+    Otherwise, generate the hash with the given salt and password.(verifying users)
+    returns {'hash': hash in hex, 'salt': salt in hex}
     """
+
     if not salt:
         salt = os.urandom(8)
     else:
@@ -73,29 +75,27 @@ def create_hash(password, salt=None):
 
 
 def verify_login(user, password):
-    """
-    Verification for logging in a user.
-    Based on username get password hash and salt from database. Hash given password with the salt retrieved and cooompare with database.
-    On invalid logins, return 'no_user' or 'invalid'
+    """Verification for logging in a user.
+
+    Get password hash and salt from database. Hash the given password with the salt and compare with the password has from the database.
+    On invalid logins, return None for no user or ['invalid',None] for wrong password or user
     On valid login, return list ['valid', userID ]
     """
-    q = f"SELECT password_hash, salt, UserID FROM Users WHERE Users.username = (%s) "
-    result = select_query(q, (user))
-    if not result:
-        return 'no_user'
-    new_hash = create_hash(password, result[0][1])
-    print(new_hash)
-    if new_hash['hash'] == result[0][0]:
-        return ['valid', result[0][2]]
+
+    q = "SELECT password_hash, salt, UserID FROM Users WHERE Users.username = (%s) "
+
+    query_result = select_query(q, (user))
+    password_hash, salt, UserID = query_result[0]
+    new_hash = create_hash(password, salt)
+    if new_hash['hash'] == password_hash:
+        return ['valid', UserID]
     else:
-        return 'invalid'
+        return ['invalid', None]
 
 
 def create_user(username, password):
-    """
-    TODO FIX
-    return s user id
-    """
+    """Insert username and hashed password into database."""
+
     result = create_hash(password)
     modify_query('INSERT INTO Users (username,password_hash,salt) VALUES ((%s), (%s), (%s))',
                  username, result['hash'], result['salt'])
@@ -103,70 +103,68 @@ def create_user(username, password):
     return verify_login(username, password)
 
 
-def get_my_questions(user_id):
-    """"
-    Returns a list of Question objects
-    TODO change to user_id
-    questions - gets all questions of username
-    answers - get all answers for all the questions asked by the user
+def get_questions(user_id=None):
+    """" Get all questions for given user.
 
+    If no user is provided,get all questions.
+    Get questions and create a dictionary object {'q_id': Question(question,q_id,user_id))}
+    Join answer table with question on the question ID to identify which answers are for the questions the user asked then get all the answers.
+    Using the q_id  add the answers to the Question object. then return the list of Question objects
     """
-    questions = select_query(
-        "SELECT q_id,question FROM question WHERE question.user_id = (%s) ORDER BY create_time DESC ", user_id)
 
-    answers = select_query(
-        "SELECT answer.q_id, answer.answer, answer.a_id,answer.is_answer FROM answer Left JOIN  question on answer.q_id=question.q_id WHERE question.user_id =(%s)", user_id)
-    my_questions = {q[0]: copy.deepcopy(
-        Question(q[1], q_id=q[0], user_id=user_id)) for q in questions}
+    if user_id:
+        questions = select_query(
+            "SELECT q_id,question,user_id FROM question WHERE question.user_id = (%s) ORDER BY create_time DESC ", user_id)
 
-    for a in answers:
-        my_questions[a[0]]['answers'].append((a[1], a[2], a[3]))
-    return my_questions.values()
+        answers = select_query(
+            "SELECT answer.q_id, answer.answer, answer.a_id,answer.is_answer FROM answer Left JOIN  question on answer.q_id=question.q_id WHERE question.user_id =(%s)", user_id)
+    else:
+        questions = select_query(
+            "SELECT q_id,question, user_id FROM question")
+        answers = select_query(
+            "SELECT answer.q_id, answer.answer, answer.a_id, answer.is_answer FROM answer Left JOIN  question on answer.q_id=question.q_id")
 
+    questions = {q_id: copy.deepcopy(
+        Question(question, q_id=q_id, user_id=user_id)) for q_id, question, user_id in questions}
 
-def get_all_questions(user_id):
-    """"
-    returns a list of Question objects. for all questions
-
-    """
-    questions = select_query(
-        "SELECT q_id,question, user_id FROM question")
-    my_questions = {q[0]: copy.deepcopy(
-        Question(q[1], q_id=q[0], user_id=q[2])) for q in questions}
-
-    answers = select_query(
-        "SELECT answer.q_id, answer.answer, answer.a_id, answer.is_answer FROM answer Left JOIN  question on answer.q_id=question.q_id")
-    for a in answers:
-        my_questions[a[0]]['answers'].append((a[1], a[2], a[3]))
-    return my_questions.values()
+    for q_id, answer, a_id, is_answer in answers:
+        questions[q_id]['answers'].append((answer, a_id, is_answer))
+    return questions.values()
 
 
 def new_question(question, userID):
-    """
-    Insert new question
-    """
+    """Insert new question"""
+
     query_string = "INSERT INTO Question(question,user_id) VALUES (%s,%s)"
     modify_query(query_string, question, userID)
     return True
 
 
 def answer_question(q_id, answer, u_id):
+    """Add an answer for a question."""
+
     query_string = "INSERT INTO Answer(q_id, answer,user_id) VALUES (%s, %s, %s)"
     modify_query(query_string, q_id, answer, u_id)
     return True
 
 
 def delete_question(q_id):
+    """Delete a question."""
+
     query_string = "DELETE FROM question WHERE q_id = (%s)"
     modify_query(query_string, q_id)
 
 
 def delete_answer(a_id):
+    """Delete an answer"""
+
     query_string = "DELETE FROM answer WHERE a_id = (%s)"
     print("DSADSADASDASE", a_id)
     modify_query(query_string, a_id)
 
 
 def mark_answer(a_id, val):
+    """Mark an answer as a selected answer."""
+
     query_string = "UPDATE answer SET is_answer = (%s)WHERE a_id = (%s)"
     modify_query(query_string, val, a_id)
