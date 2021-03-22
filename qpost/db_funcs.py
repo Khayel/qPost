@@ -82,13 +82,14 @@ def verify_login(user, password):
     On valid login, return list ['valid', userID ]
     """
 
-    q = "SELECT password_hash, salt, UserID FROM Users WHERE Users.username = (%s) "
+    q = "SELECT password_hash, salt, UserID ,is_teacher FROM Users WHERE Users.username = (%s) "
 
     query_result = select_query(q, (user))
-    password_hash, salt, UserID = query_result[0]
+    print(query_result)
+    password_hash, salt, UserID, is_teacher = query_result[0]
     new_hash = create_hash(password, salt)
     if new_hash['hash'] == password_hash:
-        return ['valid', UserID]
+        return ['valid', UserID, is_teacher]
     else:
         return ['invalid', None]
 

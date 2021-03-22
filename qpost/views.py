@@ -1,7 +1,7 @@
 from flask import render_template, url_for, request, session, redirect, jsonify
 from flask.blueprints import Blueprint
 from .db_funcs import *
-from .decorators import login_required
+from .decorators import login_required, teacher_required
 from http import HTTPStatus
 
 views = Blueprint('views', __name__)
@@ -11,6 +11,8 @@ views = Blueprint('views', __name__)
 @login_required
 def index():
     """ Default page showing logged in user's question."""
+    if session['is_teacher']:
+        return redirect(url_for('views.teacher'))
 
     return render_template('index.html',
                            username=session['username'],
@@ -37,6 +39,10 @@ def login():
             elif login_status[0] == "valid":
                 session['username'] = request.form.get('username')
                 session['user_id'] = login_status[1]
+                if login_status[2]:
+                    session['is_teacher'] = True
+                else:
+                    session['is_teacher'] = False
                 return redirect(url_for('views.index'))
             elif login_status[0] == "invalid":
                 return render_template('login.html', status="invalid")
@@ -46,6 +52,19 @@ def login():
             session['username'] = request.form.get('username')
             session['user_id'] = new_user[1]
             return redirect(url_for('views.index'))
+
+
+@views.route('/teacher')
+@login_required
+@teacher_required
+def teacher():
+    return render_template(
+        'index.html',
+        username=session['username'],
+        user_id=session['user_id'],
+        is_mine=True,
+        is_teacher=True,
+        my_questions=get_questions())
 
 
 @ views.route('/logout')
