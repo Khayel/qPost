@@ -39,3 +39,12 @@ body{
 .card{
     margin: 0.5em;
 }
+
+.filters{
+    display: inline;
+    background-color: gray;
+    margin-left: 2em;
+    padding:  1em 2em;
+
+}
+

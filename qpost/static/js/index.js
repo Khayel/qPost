@@ -62,7 +62,24 @@ $(document).ready(() => {
 
     })
 
+    $('.filter_all').click((e) => {
+        clearFilterClasses(e)
+    })
+    $('.filter_answered').click((e) => {
+        clearFilterClasses(e)
+    })
 
+    $('.filter_unanswered').click((e) => {
+        clearFilterClasses(e)
+    })
+
+
+    function clearFilterClasses(e) {
+        $(".filters > button").addClass('btn-secondary')
+        $(e.target).addClass('btn-primary');
+        $(e.target).removeClass('btn-secondary');
+
+    }
 
 
 });
